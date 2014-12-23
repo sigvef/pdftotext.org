@@ -138,6 +138,7 @@
   </footer>
 
     <script>
+      (function() {
       var currentFilename = '';
       var laddaButton = Ladda.create(document.querySelector( '.btn-file' ));
       document.querySelector('#file').addEventListener('change', function(e) {
@@ -209,6 +210,7 @@
           {type: "text/plain;charset=utf-8"});
           saveAs(blob, currentFilename + ".txt");
         });
+      })();
     </script>
 
     <script>
