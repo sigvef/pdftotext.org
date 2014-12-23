@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>
+      PDF to Text - pdftotext.org
+    </title>
+    <meta name=viewport content=width=device-width,initial-scale=1>
+    <script src=pdf.js></script>
+    <script src=FileSaver.min.js></script>
+    <script src=spin.min.js></script>
+    <script src=ladda.min.js></script>
+    <link href=bootstrap.min.css rel=stylesheet>
+    <link href=material.min.css rel=stylesheet>
+    <link href=material-wfont.min.css rel=stylesheet>
+    <link href=ripples.min.css rel=stylesheet>
+    <link href=ladda-themeless.min.css rel=stylesheet>
+    <style>
+      html {
+        position: relative;
+        min-height: 100%;
+      }
+      body {
+        margin: 0 0 70px;
+      }
+      footer {
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        height: 30px;
+        width: 100%;
+      }
+      .well {
+        margin-top: 40px;
+      }
+
+      .btn {
+        margin: 40px 0 0;
+      }
+
+      .btn-file {
+        position: relative;
+        overflow: hidden;
+      }
+      .btn-file input[type=file] {
+        position: absolute;
+        top: 0;
+        right: 0;
+        min-width: 100%;
+        min-height: 100%;
+        font-size: 100px;
+        text-align: right;
+        opacity: 0;
+        outline: none;
+        background: white;
+        cursor: inherit;
+        display: block;
+      }
+      .header-panel {
+        background: #009587 url(header.jpg) no-repeat center center;
+        background-size: cover;
+        height: 244px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class=header-panel>
+    </div>
+
+    <div class=container>
+      <div style=text-align:center>
+        <span
+          class="btn btn-primary btn-file ladda-button"
+          data-style=expand-left
+          >
+          Convert PDF to text
+          <input
+            type=file
+            id=file
+            name=file
+            accept=application/pdf
+            />
+        </span>
+        <a href class="btn btn-info hide" id=download-btn>
+          Download as TXT
+        </a>
+      </div>
+
+
+      <div class=row>
+        <div
+          id=output
+          class="col-xs-12 well"
+          style=font-family:monospace;display:none
+          >
+        </div>
+        <div
+          id=error
+          class="col-xs-12"
+          style=font-style:italic;display:none;text-align:center;margin-top:40px
+          >
+        </div>
+      </div>
+
+      <div class=row>
+        <div class="col-sm-offset-3 col-sm-6 well">
+          <p>
+            <strong>pdf</strong>to<strong>text</strong>.org
+            is the best online service for easily extracting
+            text from your PDF files.
+            Conversion from PDF to TXT is really fast
+            thanks to our in-browser conversion architecture.
+          </p>
+          <p>
+            Your PDF files are never uploaded to the Internet,
+            so even private PDF files are safe to convert with this service.
+            The conversion is done locally in your browser &ndash;
+            you can even convert when you are offline!
+          </p>
+          </p>
+            There is no need for any registration or sign-up,
+            and the service will always be free to use.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div class=container>
+      <div class=pull-right>
+        A free service by <a href=http://arkt.is>Sigve Sebastian Farstad</a>
+      </div>
+      <a href=https://pdftotext.org style=color:rgba(0,0,0,.84)>
+        <strong>pdf</strong>to<strong>text</strong>.org
+      </a>
+    </div>
+  </footer>
+
+    <script>
+      var currentFilename = '';
+      var laddaButton = Ladda.create(document.querySelector( '.btn-file' ));
+      document.querySelector('#file').addEventListener('change', function(e) {
+        var fileReader = new FileReader();
+        fileReader.onload = function(e) {
+          PDFJS.getDocument(e.target.result).then(function(pdf) {
+            var items = [];
+            var pagesRemaining = pdf.pdfInfo.numPages;
+            for(var i = 1; i <= pdf.pdfInfo.numPages; i++) {
+              pdf.getPage(i).then(function(page) {
+                page.getTextContent().then(function(textContent) {
+                  var previousHeight = NaN;
+                  var currentString = [];
+
+                  for(var j = 0; j < textContent.items.length; j++) {
+                      var item = textContent.items[j];
+                      if(item.transform[5] != previousHeight) {
+                        previousHeight = item.transform[5];
+                        items.push({item: item, str: currentString.join('')});
+                        currentString = [item.str];
+                      } else {
+                        currentString.push(item.str);  
+                      }
+                  }
+                  pagesRemaining--;
+                  if(pagesRemaining == 0) {
+                    var outputContainer = document.querySelector('#output');
+                    var errorContainer = document.querySelector('#error');
+                    outputContainer.style.display = 'none';
+                    errorContainer.style.display = 'none';
+                      document.querySelector('#download-btn')
+                        .classList.add('hide');
+                    if(items.length) {
+                      outputContainer.style.display = 'block';
+                      document.querySelector('#download-btn')
+                        .classList.remove('hide');
+                      outputContainer.innerHTML = '';
+                      items.forEach(function(item) {
+                        var div = document.createElement('div');
+                        div.textContent = item.str;
+                        outputContainer.appendChild(div);
+                      });
+                      ga('send', 'event', 'conversion', 'success');
+                    } else {
+                      errorContainer.textContent = 'No text found in PDF.';  
+                      errorContainer.style.display = 'block';  
+                      ga('send', 'event', 'conversion', 'no text found');
+                    }
+                    laddaButton.stop();
+                  }
+                });
+              });
+            }
+          });
+        };
+        if(e.target.files && e.target.files[0]) {
+          laddaButton.start();
+          ga('send', 'event', 'button', 'click', 'convert pdf to text');
+          fileReader.readAsArrayBuffer(e.target.files[0]);
+          currentFilename = e.target.files[0].name;
+        }
+      });
+
+      document.querySelector('#download-btn')
+        .addEventListener('click', function(e) {
+          e.preventDefault();
+          ga('send', 'event', 'button', 'click', 'download button');
+          var blob = new Blob([document.querySelector('#output').textContent],
+          {type: "text/plain;charset=utf-8"});
+          saveAs(blob, currentFilename + ".txt");
+        });
+    </script>
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+      ga('create', 'UA-57967705-1', 'auto');
+      ga('send', 'pageview');
+    </script>
+  </body>
+</html>
