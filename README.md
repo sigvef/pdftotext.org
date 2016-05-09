@@ -1,3 +1,3 @@
 pdftotext.github.io
 
-![](http://i.imgur.com/2hqMQPF.jpg)
+![](http://i.imgur.com/l2xodf4.png)
